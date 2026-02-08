@@ -1,0 +1,556 @@
+-- Sentrix by: chockymilkj22 (full clean remake)
+
+---------------- SERVICES ----------------
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local LP = Players.LocalPlayer
+local Mouse = LP:GetMouse()
+local Camera = workspace.CurrentCamera
+
+---------------- GUI ROOT ----------------
+local gui = Instance.new("ScreenGui")
+gui.Name = "Sentrix"
+gui.ResetOnSpawn = false
+gui.Parent = LP:WaitForChild("PlayerGui")
+
+---------------- MAIN WINDOW ----------------
+local main = Instance.new("Frame")
+main.Size = UDim2.fromScale(0.40, 0.5)
+main.Position = UDim2.fromScale(0.05, 1.1)
+main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+main.Active = true
+main.Draggable = true
+main.ClipsDescendants = true
+main.Parent = gui
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 10)
+
+---------------- TITLE BAR ----------------
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.fromScale(1, 0.14)
+titleBar.BackgroundTransparency = 1
+titleBar.Parent = main
+
+local icon = Instance.new("ImageLabel")
+icon.Size = UDim2.fromScale(0.16, 0.8)
+icon.Position = UDim2.fromScale(0.03, 0.1)
+icon.BackgroundTransparency = 1
+icon.ScaleType = Enum.ScaleType.Fit
+icon.Image = "rbxthumb://type=Asset&id=120466102356693&w=150&h=150"
+icon.Parent = titleBar
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.fromScale(0.70, 1)
+title.Position = UDim2.fromScale(0.20, 0) -- closer to icon
+title.BackgroundTransparency = 1
+title.Text = "Sentrix"
+title.Font = Enum.Font.GothamBold
+title.TextScaled = true
+title.TextColor3 = Color3.fromRGB(0, 255, 200)
+title.Parent = titleBar
+
+---------------- BOTTOM LABEL ----------------
+local bottom = Instance.new("TextLabel")
+bottom.Size = UDim2.fromScale(1, 0.07)
+bottom.Position = UDim2.fromScale(0, 0.93)
+bottom.BackgroundTransparency = 1
+bottom.Text = "Press LeftControl to toggle menu"
+bottom.Font = Enum.Font.Gotham
+bottom.TextScaled = true
+bottom.TextColor3 = Color3.fromRGB(200, 200, 200)
+bottom.Parent = main
+
+---------------- TAB BAR ----------------
+local tabBar = Instance.new("Frame")
+tabBar.Size = UDim2.fromScale(1, 0.09)
+tabBar.Position = UDim2.fromScale(0, 0.14)
+tabBar.BackgroundTransparency = 1
+tabBar.Parent = main
+
+local tabButtons = {}
+local allButtons = {}
+
+local function makeTab(name, x)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.fromScale(0.24, 1)
+    b.Position = UDim2.fromScale(x, 0)
+    b.Text = name
+    b.Font = Enum.Font.Gotham
+    b.TextScaled = true
+    b.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    b.TextColor3 = Color3.new(1, 1, 1)
+    b.Parent = tabBar
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+    table.insert(tabButtons, b)
+    return b
+end
+
+local regTab = makeTab("Regular", 0.01)
+local funTab = makeTab("Fun", 0.26)
+local trollTab = makeTab("Troll", 0.51)
+local settingsTab = makeTab("Settings", 0.76)
+
+---------------- PAGES ----------------
+local function newPage()
+    local f = Instance.new("Frame")
+    f.Size = UDim2.fromScale(1, 0.77)
+    f.Position = UDim2.fromScale(0, 0.23)
+    f.BackgroundTransparency = 1
+    f.Visible = false
+    f.Parent = main
+    return f
+end
+
+local regular = newPage()
+local fun = newPage()
+local troll = newPage()
+local settings = newPage()
+regular.Visible = true
+
+local function showPage(which)
+    regular.Visible = which == "r"
+    fun.Visible = which == "f"
+    troll.Visible = which == "t"
+    settings.Visible = which == "s"
+end
+
+regTab.MouseButton1Click:Connect(function() showPage("r") end)
+funTab.MouseButton1Click:Connect(function() showPage("f") end)
+trollTab.MouseButton1Click:Connect(function() showPage("t") end)
+settingsTab.MouseButton1Click:Connect(function() showPage("s") end)
+
+---------------- GENERAL BUTTON FACTORY ----------------
+local function makeButton(parent, text, posY)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.fromScale(0.9, 0.12)
+    b.Position = UDim2.fromScale(0.05, posY)
+    b.Text = text
+    b.Font = Enum.Font.Gotham
+    b.TextScaled = true
+    b.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    b.TextColor3 = Color3.new(1, 1, 1)
+    b.Parent = parent
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+
+    local defaultColor = b.BackgroundColor3
+    local hoverColor = Color3.fromRGB(80, 80, 80)
+    local defaultSize = b.Size
+    local hoverSize = UDim2.fromScale(0.92, 0.13)
+
+    b.MouseEnter:Connect(function()
+        TweenService:Create(b, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+            BackgroundColor3 = hoverColor,
+            Size = hoverSize
+        }):Play()
+    end)
+
+    b.MouseLeave:Connect(function()
+        TweenService:Create(b, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+            BackgroundColor3 = defaultColor,
+            Size = defaultSize
+        }):Play()
+    end)
+
+    table.insert(allButtons, b)
+    return b
+end
+
+---------------- FUN TAB BUTTON FACTORY (TWO-COLUMN) ----------------
+local function funBtn(parent, text, row, col)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.fromScale(0.43, 0.10)
+    b.Position = UDim2.fromScale(
+        col == 1 and 0.05 or 0.52,
+        0.02 + (row * 0.12)
+    )
+    b.Text = text
+    b.Font = Enum.Font.Gotham
+    b.TextScaled = true
+    b.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    b.TextColor3 = Color3.new(1, 1, 1)
+    b.Parent = parent
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+
+    local defaultColor = b.BackgroundColor3
+    local hoverColor = Color3.fromRGB(80, 80, 80)
+    local defaultSize = b.Size
+    local hoverSize = UDim2.fromScale(0.45, 0.11)
+
+    b.MouseEnter:Connect(function()
+        TweenService:Create(b, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+            BackgroundColor3 = hoverColor,
+            Size = hoverSize
+        }):Play()
+    end)
+
+    b.MouseLeave:Connect(function()
+        TweenService:Create(b, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+            BackgroundColor3 = defaultColor,
+            Size = defaultSize
+        }):Play()
+    end)
+
+    table.insert(allButtons, b)
+    return b
+end
+
+---------------- THEME SYSTEM ----------------
+local themes = {
+    Neon = {
+        main = Color3.fromRGB(10, 10, 25),
+        accent = Color3.fromRGB(0, 255, 200),
+        button = Color3.fromRGB(40, 40, 80),
+        text = Color3.fromRGB(230, 230, 255)
+    },
+    Dark = {
+        main = Color3.fromRGB(20, 20, 20),
+        accent = Color3.fromRGB(200, 200, 200),
+        button = Color3.fromRGB(50, 50, 50),
+        text = Color3.fromRGB(230, 230, 230)
+    },
+    Vaporwave = {
+        main = Color3.fromRGB(30, 10, 40),
+        accent = Color3.fromRGB(255, 120, 200),
+        button = Color3.fromRGB(70, 40, 90),
+        text = Color3.fromRGB(255, 220, 255)
+    },
+    Matrix = {
+        main = Color3.fromRGB(5, 5, 5),
+        accent = Color3.fromRGB(0, 255, 0),
+        button = Color3.fromRGB(20, 40, 20),
+        text = Color3.fromRGB(200, 255, 200)
+    },
+    Sunset = {
+        main = Color3.fromRGB(40, 15, 10),
+        accent = Color3.fromRGB(255, 140, 80),
+        button = Color3.fromRGB(80, 40, 30),
+        text = Color3.fromRGB(255, 230, 210)
+    }
+}
+
+local currentThemeName = "Neon"
+
+local function applyTheme(name)
+    local t = themes[name]
+    if not t then return end
+    currentThemeName = name
+
+    main.BackgroundColor3 = t.main
+    title.TextColor3 = t.accent
+    bottom.TextColor3 = t.text
+
+    for _, tb in ipairs(tabButtons) do
+        tb.BackgroundColor3 = t.button
+        tb.TextColor3 = t.text
+    end
+
+    for _, b in ipairs(allButtons) do
+        b.BackgroundColor3 = t.button
+        b.TextColor3 = t.text
+    end
+end
+
+---------------- REGULAR FEATURES ----------------
+local flying = false
+local noclip = false
+local esp = false
+local aimbot = false
+local flyBV, flyBG
+
+local flyBtn = makeButton(regular, "Fly [Toggle]", 0.02)
+flyBtn.MouseButton1Click:Connect(function()
+    flying = not flying
+    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    if flying then
+        flyBV = Instance.new("BodyVelocity", hrp)
+        flyBV.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+        flyBG = Instance.new("BodyGyro", hrp)
+        flyBG.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
+    else
+        if flyBV then flyBV:Destroy() end
+        if flyBG then flyBG:Destroy() end
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if flying and flyBV and flyBG then
+        flyBG.CFrame = Camera.CFrame
+        flyBV.Velocity = Camera.CFrame.LookVector * 60
+    end
+end)
+
+local espBtn = makeButton(regular, "ESP [Toggle]", 0.18)
+espBtn.MouseButton1Click:Connect(function()
+    esp = not esp
+    for _, p in Players:GetPlayers() do
+        if p ~= LP and p.Character then
+            local h = p.Character:FindFirstChild("Highlight") or Instance.new("Highlight", p.Character)
+            h.FillColor = Color3.new(1, 0, 0)
+            h.Enabled = esp
+        end
+    end
+end)
+
+local aimbotBtn = makeButton(regular, "Aimbot [Toggle]", 0.34)
+aimbotBtn.MouseButton1Click:Connect(function()
+    aimbot = not aimbot
+end)
+
+RunService.RenderStepped:Connect(function()
+    if not aimbot then return end
+    local closest, dist
+    for _, p in Players:GetPlayers() do
+        if p ~= LP and p.Character and p.Character:FindFirstChild("Head") then
+            local pos, onscreen = Camera:WorldToViewportPoint(p.Character.Head.Position)
+            if onscreen then
+                local d = (Vector2.new(pos.X, pos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
+                if not dist or d < dist then
+                    dist = d
+                    closest = p
+                end
+            end
+        end
+    end
+    if closest then
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, closest.Character.Head.Position)
+    end
+end)
+
+local noclipBtn = makeButton(regular, "Noclip [Toggle]", 0.50)
+noclipBtn.MouseButton1Click:Connect(function()
+    noclip = not noclip
+end)
+
+RunService.Stepped:Connect(function()
+    if noclip and LP.Character then
+        for _, v in LP.Character:GetDescendants() do
+            if v:IsA("BasePart") then
+                v.CanCollide = false
+            end
+        end
+    end
+end)
+
+local clickTpBtn = makeButton(regular, "Click Teleport", 0.66)
+clickTpBtn.MouseButton1Click:Connect(function()
+    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        hrp.CFrame = Mouse.Hit + Vector3.new(0, 3, 0)
+    end
+end)
+
+local delObjBtn = makeButton(regular, "Delete Object", 0.82)
+delObjBtn.MouseButton1Click:Connect(function()
+    Mouse.Button1Down:Once(function()
+        if Mouse.Target then
+            Mouse.Target:Destroy()
+        end
+    end)
+end)
+
+---------------- FUN FEATURES (SCROLLING, TWO-COLUMN) ----------------
+local funScroll = Instance.new("ScrollingFrame")
+funScroll.Size = UDim2.fromScale(1, 1)
+funScroll.CanvasSize = UDim2.fromScale(0, 1.4)
+funScroll.ScrollBarThickness = 4
+funScroll.BackgroundTransparency = 1
+funScroll.Parent = fun
+
+-- Vine Boom Tool
+local vineBtn = funBtn(funScroll, "Vine Boom Tool", 0, 1)
+vineBtn.MouseButton1Click:Connect(function()
+    local tool = Instance.new("Tool", LP.Backpack)
+    tool.Name = "Vine Boom"
+    tool.RequiresHandle = false
+    tool.Equipped:Connect(function()
+        local s = Instance.new("Sound", workspace)
+        s.SoundId = "rbxassetid://1837635158"
+        s.Volume = 5
+        s:Play()
+        task.delay(2, function() s:Destroy() end)
+    end)
+end)
+
+-- Big Head
+local bigHeadBtn = funBtn(funScroll, "Big Head", 0, 2)
+bigHeadBtn.MouseButton1Click:Connect(function()
+    local h = LP.Character and LP.Character:FindFirstChild("Head")
+    if h then h.Size = h.Size * 1.5 end
+end)
+
+-- Gravity Launch
+local gravBtn = funBtn(funScroll, "Gravity Launch", 1, 1)
+gravBtn.MouseButton1Click:Connect(function()
+    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then hrp.Velocity = Vector3.new(0, 120, 0) end
+end)
+
+-- Confetti Explosion
+local confBtn = funBtn(funScroll, "Confetti Explosion", 1, 2)
+confBtn.MouseButton1Click:Connect(function()
+    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local p = Instance.new("ParticleEmitter", hrp)
+    p.Texture = "rbxassetid://241876969"
+    p.Lifetime = NumberRange.new(1)
+    p.Rate = 200
+    p.Speed = NumberRange.new(20)
+    p:Emit(200)
+
+    task.delay(1, function() p:Destroy() end)
+end)
+
+-- Bonk Sound
+local bonkBtn = funBtn(funScroll, "Bonk Sound", 2, 1)
+bonkBtn.MouseButton1Click:Connect(function()
+    local s = Instance.new("Sound", workspace)
+    s.SoundId = "rbxassetid://234365573"
+    s.Volume = 3
+    s:Play()
+    task.delay(2, function() s:Destroy() end)
+end)
+
+-- Spin Everyone
+local spinBtn = funBtn(funScroll, "Spin Everyone", 2, 2)
+spinBtn.MouseButton1Click:Connect(function()
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = plr.Character.HumanoidRootPart
+            task.spawn(function()
+                for _ = 1, 20 do
+                    hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(30), 0)
+                    task.wait(0.05)
+                end
+            end)
+        end
+    end
+end)
+
+-- Rainbow Trail
+local rainbowBtn = funBtn(funScroll, "Rainbow Trail", 3, 1)
+rainbowBtn.MouseButton1Click:Connect(function()
+    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local trail = Instance.new("Trail", hrp)
+    trail.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+        ColorSequenceKeypoint.new(0.2, Color3.fromRGB(255, 128, 0)),
+        ColorSequenceKeypoint.new(0.4, Color3.fromRGB(255, 255, 0)),
+        ColorSequenceKeypoint.new(0.6, Color3.fromRGB(0, 255, 0)),
+        ColorSequenceKeypoint.new(0.8, Color3.fromRGB(0, 0, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(128, 0, 255))
+    }
+    trail.Lifetime = 1
+
+    local a0 = Instance.new("Attachment", hrp)
+    local a1 = Instance.new("Attachment", hrp)
+    a1.Position = Vector3.new(0, -2, 0)
+
+    trail.Attachment0 = a0
+    trail.Attachment1 = a1
+
+    task.delay(10, function()
+        trail:Destroy()
+        a0:Destroy()
+        a1:Destroy()
+    end)
+end)
+
+---------------- TROLL FEATURES ----------------
+local trollKnifeBtn = makeButton(troll, "Troll Knife", 0.18)
+trollKnifeBtn.MouseButton1Click:Connect(function()
+    local tool = Instance.new("Tool", LP.Backpack)
+    tool.Name = "Troll Knife"
+    local handle = Instance.new("Part", tool)
+    handle.Name = "Handle"
+    handle.Size = Vector3.new(1, 4, 0.4)
+    handle.CanCollide = false
+    handle.Massless = true
+    handle.Touched:Connect(function(hit)
+        local hrp = hit.Parent and hit.Parent:FindFirstChild("HumanoidRootPart")
+        if hrp and hit.Parent ~= LP.Character then
+            hrp.Velocity = Vector3.new(0, 120, 0)
+        end
+    end)
+end)
+
+---------------- SETTINGS PAGE ----------------
+local themeLabel = Instance.new("TextLabel")
+themeLabel.Size = UDim2.fromScale(1, 0.14)
+themeLabel.Position = UDim2.fromScale(0, 0.02)
+themeLabel.BackgroundTransparency = 1
+themeLabel.Text = "Theme"
+themeLabel.Font = Enum.Font.GothamBold
+themeLabel.TextScaled = true
+themeLabel.TextColor3 = Color3.new(1, 1, 1)
+themeLabel.Parent = settings
+
+local themeButton = Instance.new("TextButton")
+themeButton.Size = UDim2.fromScale(0.9, 0.14)
+themeButton.Position = UDim2.fromScale(0.05, 0.18)
+themeButton.Text = "Current: Neon (click to cycle)"
+themeButton.Font = Enum.Font.Gotham
+themeButton.TextScaled = true
+themeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+themeButton.TextColor3 = Color3.new(1, 1, 1)
+themeButton.Parent = settings
+Instance.new("UICorner", themeButton).CornerRadius = UDim.new(0, 8)
+table.insert(allButtons, themeButton)
+
+local themeOrder = {"Neon", "Dark", "Vaporwave", "Matrix", "Sunset"}
+local themeIndex = 1
+
+themeButton.MouseButton1Click:Connect(function()
+    themeIndex += 1
+    if themeIndex > #themeOrder then
+        themeIndex = 1
+    end
+    local name = themeOrder[themeIndex]
+    themeButton.Text = "Current: " .. name .. " (click to cycle)"
+    applyTheme(name)
+end)
+
+---------------- INITIAL THEME ----------------
+applyTheme(currentThemeName)
+
+---------------- MENU TOGGLE (LEFTCONTROL) ----------------
+local menuVisible = true
+local hiddenPos = UDim2.fromScale(0.05, 1.1)
+local shownPos = UDim2.fromScale(0.05, 0.25)
+
+main.Visible = true
+main.Position = hiddenPos
+main.BackgroundTransparency = 1
+
+TweenService:Create(main, TweenInfo.new(0.6, Enum.EasingStyle.Quad), {
+    BackgroundTransparency = 0,
+    Position = shownPos
+}):Play()
+
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if input.KeyCode == Enum.KeyCode.LeftControl then
+        if menuVisible then
+            menuVisible = false
+            TweenService:Create(main, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {
+                Position = hiddenPos,
+                BackgroundTransparency = 0.3
+            }):Play()
+        else
+            menuVisible = true
+            main.Visible = true
+            TweenService:Create(main, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {
+                Position = shownPos,
+                BackgroundTransparency = 0
+            }):Play()
+        end
+    end
+end)
+
+print("Sentrix loaded.")
